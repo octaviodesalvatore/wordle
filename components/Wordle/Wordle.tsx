@@ -1,8 +1,20 @@
 import React, { useEffect, useState } from "react";
 import styles from "./wordle.module.css";
 
-const Wordle = () => {
-  const [submitGuess, setSubmitGuess] = useState<Array<Array<string>>>([]);
+const totalGuessMax = 6;
+
+type WordleProps = {
+  puzzleWord: string;
+};
+
+const Wordle = ({ puzzleWord }: WordleProps) => {
+  if (puzzleWord.length !== 5) {
+    throw new Error(
+      `La palabra debe tener 5 caracteres. ${puzzleWord} no es valida`
+    );
+  }
+
+  const [submittedGuesses, setSubmittedGuesses] = useState<string[][]>([]);
   const [guess, setGuess] = useState<Array<string>>([]);
 
   useEffect(() => {
@@ -22,7 +34,7 @@ const Wordle = () => {
       } else if (isChar && !isGuessFinished) {
         setGuess((prev) => [...prev, key]);
       } else if (isGuessFinished && isSubmit) {
-        setSubmitGuess((prev) => [...prev, guess]);
+        setSubmittedGuesses((prev) => [...prev, guess]);
         setGuess([]);
       }
     }
@@ -32,25 +44,68 @@ const Wordle = () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [guess.length]);
-  console.log(submitGuess);
 
+  console.log(submittedGuesses);
+
+  const isCorrect =
+    submittedGuesses.length > 0 &&
+    submittedGuesses[submittedGuesses.length - 1].join() === puzzleWord;
   return (
     <div className={styles.wordle}>
-      <EmptyGuess />
-      <EmptyGuess />
-      <EmptyGuess />
-      <EmptyGuess />
-      <EmptyGuess />
-      <EmptyGuess />
+      <SubmittedGuesses submittedGuesses={submittedGuesses} />
+      {!isCorrect && <CurrentGuess guess={guess} />}
+      {Array.from({
+        length: totalGuessMax - submittedGuesses.length - (isCorrect ? 0 : 1),
+      }).map((_, i) => {
+        return <EmptyGuess key={i} />;
+      })}
     </div>
   );
 };
 
 export default Wordle;
 
-function CurrentGuess() {}
+type SubmittedGuessesProps = {
+  submittedGuesses: string[][];
+};
 
-function PreviousGuess() {}
+function SubmittedGuesses({ submittedGuesses }: SubmittedGuessesProps) {
+  return (
+    <>
+      {submittedGuesses.map((guess, i) => {
+        return <SubmittedGuess guess={guess} key={i} />;
+      })}
+    </>
+  );
+}
+
+function SubmittedGuess({ guess }: GuessProps) {
+  return (
+    <div className={styles.submittedGuess}>
+      {Array.from({ length: 5 }).map((_, i) => {
+        return (
+          <span className={styles.char} key={i}>
+            {guess[i] || ""}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function CurrentGuess({ guess }: GuessProps) {
+  return (
+    <div className={styles.word}>
+      {Array.from({ length: 5 }).map((_, i) => {
+        return (
+          <span className={styles.char} key={i}>
+            {guess[i] || ""}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
 
 function EmptyGuess() {
   return (
@@ -61,3 +116,7 @@ function EmptyGuess() {
     </div>
   );
 }
+
+type GuessProps = {
+  guess: string[];
+};
